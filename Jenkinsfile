@@ -1,13 +1,11 @@
 pipeline {
-  agent {
-        docker {
-            image 'node:latest'
-        }
-    }
+  agent any
 
   environment {
     NODE_ENV = 'test'
     JUNIT_OUTPUT = 'test-results/junit.xml'
+    // Gets version dynamically for the deploy messages
+    APP_VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
   }
 
   options {
@@ -29,15 +27,12 @@ pipeline {
       steps {
         sh 'node --version'
         sh 'npm --version'
-        sh 'npm ci'
+        sh 'npm ci' 
       }
     }
 
     stage('Lint') {
       steps {
-        // Optional ESLint
-        // sh 'npx eslint src/'
-
         sh 'npm run test -- --listTests'
       }
     }
@@ -48,6 +43,7 @@ pipeline {
       }
       post {
         always {
+          // Note: using double quotes so Groovy reads the variable
           junit allowEmptyResults: true, testResults: "${JUNIT_OUTPUT}"
         }
       }
@@ -59,11 +55,32 @@ pipeline {
       }
     }
 
+    stage('Deploy to staging') {
+      when {
+        branch 'main'
+      }
+      steps {
+        echo "Deploying v${env.APP_VERSION} to staging..."
+        sh 'echo "kubectl apply -f k8s/staging.yaml"' 
+      }
+    }
+
+    stage('Deploy to production') {
+      when {
+        branch 'main'
+      }
+      steps {
+        input message: "Deploy v${env.APP_VERSION} to PRODUCTION?", ok: "Deploy"
+        echo "Deploying to production..."
+        sh 'echo "kubectl apply -f k8s/prod.yaml"' 
+      }
+    }
+
   }
 
   post {
     success {
-      echo "All stages passed. Build #${env.BUILD_NUMBER} is GREEN."
+      echo "All stages passed! v${env.APP_VERSION} pipeline complete. Build #${env.BUILD_NUMBER} is GREEN."
     }
     failure {
       echo "Build #${env.BUILD_NUMBER} FAILED at stage: ${env.STAGE_NAME}"
