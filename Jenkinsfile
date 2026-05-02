@@ -1,10 +1,15 @@
 pipeline {
-  agent any
+  // FIX: Tell Jenkins to use the Node container, not the Jenkins server!
+  agent {
+      docker {
+          image 'node:latest'
+      }
+  }
 
   environment {
     NODE_ENV = 'test'
     JUNIT_OUTPUT = 'test-results/junit.xml'
-    // Gets version dynamically for the deploy messages
+    // Now that we are inside the Node container, this command will work perfectly
     APP_VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
   }
 
@@ -43,7 +48,6 @@ pipeline {
       }
       post {
         always {
-          // Note: using double quotes so Groovy reads the variable
           junit allowEmptyResults: true, testResults: "${JUNIT_OUTPUT}"
         }
       }
