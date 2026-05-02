@@ -1,10 +1,9 @@
 pipeline {
   agent {
-    docker {
-      image 'node:18'
-      args '-u root:root'   // avoids permission issues when writing files
+        docker {
+            image 'node:latest'
+        }
     }
-  }
 
   environment {
     NODE_ENV = 'test'
