@@ -1,5 +1,10 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'node:18'
+      args '-u root'
+    }
+  }
 
   environment {
     NODE_ENV = 'test'
@@ -17,7 +22,6 @@ pipeline {
       steps {
         checkout scm
         echo "Branch: ${env.BRANCH_NAME}"
-        // On PRs, CHANGE_ID and CHANGE_TITLE are also set:
         script {
           if (env.CHANGE_ID) {
             echo "PR #${env.CHANGE_ID}: ${env.CHANGE_TITLE}"
@@ -28,7 +32,11 @@ pipeline {
     }
 
     stage('Install') {
-      steps { sh 'npm ci' }
+      steps { 
+        sh 'node -v'
+        sh 'npm -v'
+        sh 'npm ci' 
+      }
     }
 
     stage('Test') {
@@ -41,7 +49,6 @@ pipeline {
     }
 
     stage('Code quality') {
-      // Runs on ALL branches — feature, PR, and main
       steps {
         echo "Running lint and static analysis..."
         sh 'npm run test -- --coverage || true'
@@ -49,12 +56,10 @@ pipeline {
     }
 
     stage('Deploy to staging') {
-      // Only deploy when merging/pushing to main
-      // NOT on feature branches, NOT on PRs
       when {
         allOf {
           branch 'main'
-          not { changeRequest() }  // extra guard: not a PR build
+          not { changeRequest() }
         }
       }
       steps {
@@ -64,7 +69,6 @@ pipeline {
     }
 
     stage('Integration tests') {
-      // Only run after staging deploy (main branch only)
       when { branch 'main' }
       steps {
         echo "Running integration tests against staging..."
@@ -73,7 +77,6 @@ pipeline {
     }
 
     stage('PR validation summary') {
-      // Only runs on PR builds — gives reviewers a summary
       when { changeRequest() }
       steps {
         echo "PR #${env.CHANGE_ID} build complete."
