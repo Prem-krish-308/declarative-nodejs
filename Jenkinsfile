@@ -1,9 +1,13 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'node:18'
+      args '-u root:root'   // avoids permission issues when writing files
+    }
+  }
 
   environment {
     NODE_ENV = 'test'
-    APP_NAME = 'declarative-nodejs'
     JUNIT_OUTPUT = 'test-results/junit.xml'
   }
 
@@ -26,14 +30,15 @@ pipeline {
       steps {
         sh 'node --version'
         sh 'npm --version'
-        sh 'npm ci'        // npm ci is faster + deterministic vs npm install
+        sh 'npm ci'
       }
     }
 
     stage('Lint') {
       steps {
-        // If you have ESLint: sh 'npx eslint src/'
-        // For now just validate the package is intact:
+        // Optional ESLint
+        // sh 'npx eslint src/'
+
         sh 'npm run test -- --listTests'
       }
     }
@@ -44,7 +49,7 @@ pipeline {
       }
       post {
         always {
-          junit allowEmptyResults: true, testResults: '${JUNIT_OUTPUT}'
+          junit allowEmptyResults: true, testResults: "${JUNIT_OUTPUT}"
         }
       }
     }
@@ -73,4 +78,3 @@ pipeline {
     }
   }
 }
-
