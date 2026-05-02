@@ -7,3 +7,7 @@ test('multiply: 3 * 4 = 12', () => { expect(multiply(3, 4)).toBe(12); });
 const { divide } = require('../src/math');
 test('divide: 10 / 2 = 5', () => { expect(divide(10, 2)).toBe(5); });
 test('divide by zero throws', () => { expect(() => divide(5, 0)).toThrow(); });
+
+const { divide } = require('../src/math');
+test('divide: 10 / 2 = 5', () => { expect(divide(10, 2)).toBe(5); });
+test('divide by zero throws', () => { expect(() => divide(5, 0)).toThrow(); });
