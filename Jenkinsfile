@@ -30,7 +30,6 @@ pipeline {
         sh 'node --version'
         sh 'npm --version'
         sh 'npm ci'
-        sh 'this-command-does-not-exist'
       }
     }
 
